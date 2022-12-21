@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Conexion.cs" />
+    <Compile Include="Datos_Articulos.cs" />
     <Compile Include="frm_articulos.cs">
       <SubType>Form</SubType>
     </Compile>
