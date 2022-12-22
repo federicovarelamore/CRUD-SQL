@@ -16,6 +16,14 @@ namespace Sol_Almacen.Presentacion
         {
             InitializeComponent();
         }
+
+        #region "mis variables"
+
+        int nCodigoArticulo = 0; 
+        int nEstadoGuarda = 0; // 1 = inserta 2 = actualiza
+
+        #endregion
+
         #region "mis métodos"
         private void formato_articulos()
         {
@@ -47,6 +55,57 @@ namespace Sol_Almacen.Presentacion
             btnReporte.Enabled = estado;
             btnSalir.Enabled = estado;
         }
+
+        private void Estado_botones_procesos(bool estado) 
+        {
+            txtDescripcionArticulo.ReadOnly = estado;
+            txtDescripcionCategoria.ReadOnly = estado;
+            txtMarca.ReadOnly = estado;
+            txtUnidadMedida.ReadOnly = estado;
+            txtStock.ReadOnly = estado;
+
+            btnGuardar.Enabled = !estado;
+            btnCancelar.Enabled = !estado;
+            btnLupaCategoria.Enabled = !estado;
+            btnLupaUnidadMedida.Enabled = !estado;
+
+            btnGuardar.Visible = !estado;
+            btnCancelar.Visible = !estado;
+
+            txtBuscar.ReadOnly = !estado;
+            btnBuscar.Enabled = estado;
+        }
+
+        private void Limpia_texto()
+        {
+            txtDescripcionArticulo.Text = "";
+            txtMarca.Text = "";
+            txtStock.Text = "";
+            txtUnidadMedida.Text = "";
+            txtDescripcionCategoria.Text = "";
+
+        }
+
+        private void Selecciona_item()
+        {
+            if (string.IsNullOrEmpty(Convert.ToString(dgv_articulos.CurrentRow.Cells["codigo_articulo"].Value)))
+            {
+                MessageBox.Show("Selecciona un registro",
+                                "Aviso del sistema",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Exclamation);
+            }
+            else
+            {
+                this.nCodigoArticulo = Convert.ToInt32(dgv_articulos.CurrentRow.Cells["codigo_articulo"].Value);
+                txtDescripcionArticulo.Text = Convert.ToString(dgv_articulos.CurrentRow.Cells["descripcion_articulo"].Value);
+                txtMarca.Text = Convert.ToString(dgv_articulos.CurrentRow.Cells["marca_articulo"].Value);
+                txtUnidadMedida.Text = Convert.ToString(dgv_articulos.CurrentRow.Cells["codigo_unidad_medida"].Value);
+                txtDescripcionCategoria.Text = Convert.ToString(dgv_articulos.CurrentRow.Cells["codigo_categoria"].Value);
+                txtStock.Text = Convert.ToString(dgv_articulos.CurrentRow.Cells["stock"].Value);
+            }
+        }
+
         #endregion
         private void label2_Click(object sender, EventArgs e)
         {
@@ -100,28 +159,18 @@ namespace Sol_Almacen.Presentacion
 
         private void btnNuevo_Click(object sender, EventArgs e)
         {
-            txtDescripcionArticulo.ReadOnly = false;
-            txtDescripcionCategoria.ReadOnly = false;
-            txtMarca.ReadOnly = false;
-            txtUnidadMedida.ReadOnly = false;
-            txtStock.ReadOnly = false;
-
-            btnGuardar.Enabled = true;
-            btnCancelar.Enabled = true;
-            btnLupaCategoria.Enabled = true;
-            btnLupaUnidadMedida.Enabled= true;
-
-            btnGuardar.Visible= true;
-            btnCancelar.Visible= true;
+            Estado_botones_procesos(false);
 
             txtDescripcionArticulo.Focus();
 
-            txtBuscar.ReadOnly = true;
-            btnBuscar.Enabled = false;
+           
 
             dgv_articulos.Enabled = false;
 
             this.Estado_botones_principales(false);
+            this.Limpia_texto();
+
+            nEstadoGuarda = 1; // nuevo registro
 
         }
 
@@ -132,28 +181,60 @@ namespace Sol_Almacen.Presentacion
 
         private void btnCancelar_Click(object sender, EventArgs e)
         {
-            txtDescripcionArticulo.ReadOnly = true;
-            txtDescripcionCategoria.ReadOnly = true;
-            txtMarca.ReadOnly = true;
-            txtUnidadMedida.ReadOnly = true;
-            txtStock.ReadOnly = true;
-
-            btnGuardar.Enabled = false;
-            btnCancelar.Enabled = false;
-            btnLupaCategoria.Enabled = false;
-            btnLupaUnidadMedida.Enabled = false;
-
-            btnGuardar.Visible = false;
-            btnCancelar.Visible = false;
-
-            txtBuscar.ReadOnly = false;
-            btnBuscar.Enabled = true;
+            Estado_botones_procesos(true);
 
             dgv_articulos.Enabled = true;
 
             txtBuscar.Focus();
 
             this.Estado_botones_principales(true);
+            this.Limpia_texto();
+        }
+
+        private void btnActualizar_Click(object sender, EventArgs e)
+        {
+            nEstadoGuarda = 2; // actualiza registro
+            Estado_botones_procesos(false);
+            txtDescripcionArticulo.Focus();
+            dgv_articulos.Enabled = false;
+            this.Estado_botones_principales(false);
+            
+        }
+
+        private void btnGuardar_Click(object sender, EventArgs e)
+        {
+            string rpta = "";
+            Propiedades_Articulos oArticulos = new Propiedades_Articulos();
+            oArticulos.codigo_articulo = nCodigoArticulo;
+            oArticulos.descripcion_articulo = txtDescripcionArticulo.Text.Trim();
+            oArticulos.marca_articulo = txtMarca.Text.Trim();
+            oArticulos.codigo_unidad_medida = 1;
+            oArticulos.codigo_categoria = 1;
+            oArticulos.stock = Convert.ToInt32(txtStock.Text);
+            oArticulos.fecha_creacion = DateTime.Now.ToString("yyyy-MM-dd");
+            oArticulos.fecha_modificacion = DateTime.Now.ToString("yyyy-MM-dd");
+            nCodigoArticulo = 0;
+
+            Datos_Articulos Datos = new Datos_Articulos();
+            rpta = Datos.guardar_articulos(nEstadoGuarda, oArticulos);
+
+            if (rpta.Equals("OK"))
+            {
+                this.Limpia_texto();
+                this.Estado_botones_procesos(false);
+                this.Estado_botones_principales(true);
+                this.listado_articulos("%");
+                MessageBox.Show("El registro se ha insertado correctamente", "Aviso del sistema", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show(rpta, "Aviso del sistema", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void dgv_articulos_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            this.Selecciona_item();
         }
     }
 }
